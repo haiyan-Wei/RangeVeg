@@ -1,0 +1,8 @@
+# .gitignore content
+__pycache__/
+env_vegml/
+outputs/
+inputs/
+*.pyc
+*.json
+tbd.py
