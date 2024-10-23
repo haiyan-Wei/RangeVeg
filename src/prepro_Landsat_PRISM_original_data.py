@@ -23,20 +23,24 @@ from config import FULL_OUTPUT_DIR, PROJECT_ROOT
     # This directory must have two subdirectories: Landsat and PRISM
     """
 t0 = datetime.now()
-mp_options = "mp"    # "debug" or "mp"
+mp_options = "debug"    # "debug" or "mp"
 number_of_cpu_cores = 8
 year_last='2020'
 month_last='02'
 
-dataset = pd.read_csv(os.path.join(FULL_OUTPUT_DIR, "df_merged_tables.csv"))
-ppt = rasterio.open(os.path.join(FULL_OUTPUT_DIR, "prism", "1", "ppt.tif"))
-tmean = rasterio.open(os.path.join(FULL_OUTPUT_DIR, "prism", "1", "tmean.tif"))
+FULL_OUTPUT_DIR = r'E:\range_vegcover\original_notebooks_outputs\outputs_original'
+
+# input data
+# dataset = pd.read_csv(os.path.join(FULL_OUTPUT_DIR, "df_merged_tables.csv"))
+ppt = rasterio.open(os.path.join(FULL_OUTPUT_DIR, "prism", "ppt.tif"))
+tmean = rasterio.open(os.path.join(FULL_OUTPUT_DIR, "prism", "tmean.tif"))
 points_all = gpd.read_file(os.path.join(PROJECT_ROOT, "inputs", "vectors", "Points.shp"))
+
+# output directories
 directory_temp = os.path.join(FULL_OUTPUT_DIR, "temp", "prepro")
 directory_final = os.path.join(FULL_OUTPUT_DIR, "Final_dataset")
 os.makedirs(f"{directory_final}/Landsat", exist_ok=True)
 os.makedirs(f"{directory_final}/PRISM", exist_ok=True)
-
 
 
 def main():
@@ -44,8 +48,8 @@ def main():
     extent_all = extent_all.iloc[:2000,:]
 
     if mp_options == "debug":   
-        for i in range(3):
-            prePro1(extent_all.iloc[i], i, year_last, month_last)
+        for i in range(10):
+            prePro1(extent_all.iloc[i], year_last, month_last)
     else:
         print(f"number of cpu cores: {number_of_cpu_cores}")
         pool = mp.Pool(number_of_cpu_cores)
@@ -129,9 +133,11 @@ def prePro1(rowGdrive, year_last=year_last, month_last=month_last):
         if ImageOLI.shape[2] < 3:
             ImageOLI = np.concatenate([ImageOLI, np.full((ImageOLI.shape[0], ImageOLI.shape[1], diff1_1), -999)], axis=2)
         
-        if 'LANDSAT_8' in dates['Satellite'].values:
+        # if 'LANDSAT_8' in dates['Satellite'].values:        
+            # OLI_index = dates[dates.Satellite == 'LANDSAT_8'].index.values.tolist()
+        if 'LC08' in dates['Satellite'].values:        
 
-            OLI_index = dates[dates.Satellite == 'LANDSAT_8'].index.values.tolist()
+            OLI_index = dates[dates.Satellite == 'LC08'].index.values.tolist()
 
             formulaIndex = index
             ImageOLI_to_ETM = ImageOLI.copy()
@@ -543,7 +549,7 @@ def prePro1(rowGdrive, year_last=year_last, month_last=month_last):
     np.savez_compressed(os.path.join(directory_final, 'Landsat', f'{rowGdrive.PrimaryKey}.npz'), arr2)
     np.savez_compressed(os.path.join(directory_final, 'PRISM', f'{rowGdrive.PrimaryKey}.npz'), prism)
     
-    shutil.rmtree(directory_temp + str(rowGdrive.PrimaryKey))
+    # shutil.rmtree(directory_temp + str(rowGdrive.PrimaryKey))
 
 
 def get_extent_all():
@@ -555,7 +561,7 @@ def get_extent_all():
     # - PK_EE: the name of the Landsat data that the polygon is within that
     # extent_all = gpd.read_file('Vectors/Polygons_withEEid.shp')
     extent_all = gpd.read_file(os.path.join(PROJECT_ROOT, "inputs", "vectors", "Polygons_withEEid.shp"))
-    extent_all = extent_all[extent_all.PrimaryKey.isin(dataset.PrimaryKey)].sort_values(by='PrimaryKey')
+    # extent_all = extent_all[extent_all.PrimaryKey.isin(dataset.PrimaryKey)].sort_values(by='PrimaryKey')
     return extent_all
 
 
